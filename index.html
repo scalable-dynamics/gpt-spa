@@ -35,6 +35,15 @@
             margin: 8px 7px;
         }
 
+        #gpt-button {
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 20px 0;
+        }
+
         #search {
             padding: 10px;
             font-size: 16px;
@@ -191,6 +200,7 @@
 
 <body>
     <div class="toolbar">
+        <button id="gpt-button" title="Change GPT system prompt">⬆️</button>
         <input id="search" type="text" placeholder="Enter prompt or drop files here..." />
         <button id="ask-button">Ask</button>
         <button id="search-button">Search</button>
@@ -224,8 +234,11 @@
 
         useMarkdownRenderer(renderMarkdown)
 
+        const welcomeMessage = "Hello, how can I assist you today?"
+        const gptName = "GPT"
         const toolbar = document.getElementsByClassName('toolbar')[0];
         const searchInput = document.getElementById('search');
+        const gptButton = document.getElementById('gpt-button');
         const searchButton = document.getElementById('search-button');
         const askButton = document.getElementById('ask-button');
         const outputContainer = document.getElementById('output-container');
@@ -244,10 +257,15 @@
             localStorage.setItem('OPENAI_API_ORG', '--none--')
         }
 
-        let conversation = createConversation(await getConfig('SYSTEM_PROMPT', 'Enter the system prompt for your GPT:'))
+        let sys_prompt = await getConfig('SYSTEM_PROMPT', 'Enter the system prompt for your GPT:', 'You are a helpful assistant.')
+        if (!sys_prompt) {
+            addOutput('No system prompt provided, please refresh the page to try again.', gptName)
+            throw new Error('No system prompt provided, please refresh the page to try again.')
+        }
+        let conversation = createConversation(sys_prompt)
         let userImages = []
 
-        addOutput(`Hello, how can I assist you today?`, 'GPT')
+        addOutput(welcomeMessage, gptName)
 
         document.body.classList.add('ready');
         outputContainer.style.marginTop = `${toolbar.clientHeight + 20}px`;
@@ -258,6 +276,28 @@
                 askAssistant();
             }
         });
+        gptButton.addEventListener('click', () => {
+            const confirm = confirmationCard('Are you sure you want to reset the system prompt?')
+            outputContainer.appendChild(confirm.render())
+            confirm.getAnswer().then(async (confirmation) => {
+                if (confirmation) {
+                    outputContainer.innerHTML = ''
+                    sys_prompt = localStorage.getItem('SYSTEM_PROMPT')
+                    localStorage.removeItem('SYSTEM_PROMPT')
+                    document.body.classList.remove('ready');
+                    const prompt = await getConfig('SYSTEM_PROMPT', 'Enter the system prompt for your GPT:', sys_prompt)
+                    if (prompt) {
+                        sys_prompt = prompt
+                        localStorage.setItem('SYSTEM_PROMPT', prompt)
+                        conversation = createConversation(prompt)
+                        addOutput(welcomeMessage, gptName)
+                        document.body.classList.add('ready')
+                    } else {
+                        addOutput('No system prompt provided, please refresh the page to try again.', gptName)
+                    }
+                }
+            })
+        })
 
         onFilesDropped(document.body, async (files) => {
             for (let i = 0; i < files.length; i++) {
@@ -267,7 +307,7 @@
                         addImage(content);
                     } else {
                         await conversation.add(name, content);
-                        addOutput(`Added ${name}`, 'GPT');
+                        addOutput(`Added ${name}`, gptName);
                     }
                 }
             }
@@ -331,7 +371,7 @@
                 ]
                 userImages = []
             }
-            const appendOutput = addOutput("", 'GPT')
+            const appendOutput = addOutput("", gptName)
             if (useDalle.checked) {
                 const image = await conversation.send(input, undefined, useFiles.checked, true);
                 if (image) {
@@ -350,7 +390,7 @@
             if (!query) return;
             outputContainer.innerHTML = '';
             const results = await conversation.search(query);
-            addOutput(`Found ${results.length} results for "${query}"`, 'GPT');
+            addOutput(`Found ${results.length} results for "${query}"`, gptName);
             for (const { name, text, relevance } of results) {
                 addOutput(text, `${name} (${relevance.toFixed(2)})`);
             }
@@ -760,7 +800,7 @@
             }
         }
 
-        function questionCard(question, answers = []) {
+        function questionCard(question, answers = [], defaultValue = "") {
             const card = {
                 type: 'AdaptiveCard',
                 version: '1.5',
@@ -780,16 +820,12 @@
                     type: "Input.Text",
                     id: "answer",
                     label: "Answer",
+                    value: defaultValue,
                     isMultiline: question.indexOf('prompt') > -1
                 });
                 card.actions.push({
                     type: 'Action.Submit',
-                    title: 'Submit'
-                });
-                card.actions.push({
-                    type: 'Action.Submit',
-                    title: 'Cancel',
-                    data: '_cancel_'
+                    title: 'Save'
                 });
             }
             const adaptiveCard = new AdaptiveCards.AdaptiveCard();
@@ -812,10 +848,10 @@
             }
         }
 
-        async function getConfig(option, text = `Enter the value for ${option}:`) {
+        async function getConfig(option, text = `Enter the value for ${option}:`, defaultValue = undefined) {
             const value = getQueryString(option) || localStorage.getItem(option)
             if (value) return value
-            const question = questionCard(text)
+            const question = questionCard(text, undefined, defaultValue)
             outputContainer.appendChild(question.render())
             const answer = await question.getAnswer()
             if (answer) {

@@ -26,3 +26,6 @@ A customizable GPT in a single page, using OpenAI models text-embedding-ada-002,
 10. Store memories and set reminders
 11. Create charts, diagrams and tabular data using your GPT
 12. Connect to external data sources which allow cross-origin resources (CORS)
+13. Add multiple GPTs and choose between them
+14. GPT builder interface for creating a GPT
+15. Calling functions to switch between models or change modality
