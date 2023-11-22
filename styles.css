@@ -1,0 +1,432 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    background-color: #1A202C;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.container {
+    display: flex;
+    flex-grow: 1;
+}
+
+aside {
+    width: 250px;
+    padding: 20px;
+    background-color: #000;
+    color: #fff;
+    height: 100vh;
+    overflow-y: auto;
+    position: fixed;
+}
+
+aside h2 {
+    margin-bottom: 20px;
+}
+
+aside ul {
+    list-style: none;
+}
+
+aside ul li {
+    margin-bottom: 2px;
+}
+
+aside ul li a {
+    color: #fff;
+    text-decoration: none;
+    display: block;
+    padding: 4px 6px;
+    line-height: 30px;
+}
+
+aside ul li a img {
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+    vertical-align: middle;
+    border-radius: 50%;
+}
+
+aside ul li a:hover {
+    color: #f4f4f4;
+    background-color: #1A202C;
+    border-radius: 6px;
+}
+
+main {
+    flex-grow: 1;
+    padding: 20px;
+    position: relative;
+    margin-left: 250px;
+}
+
+main h1 {
+    position: absolute;
+}
+
+.tabs {
+    background: #4A5568;
+    width: 350px;
+    margin: 0 auto;
+    border-radius: 6px;
+}
+
+.tab {
+    display: inline-block;
+}
+
+.tab>label {
+    background: transparent;
+    padding: 10px;
+    font-size: 18px;
+    width: 150px;
+    height: 40px;
+    line-height: 32px;
+    text-align: center;
+    display: inline-block;
+    cursor: pointer;
+    padding: 4px 20px;
+    margin: 6px 10px;
+}
+
+.tab>[type=radio] {
+    display: none;
+}
+
+.content {
+    position: absolute;
+    inset: 0;
+    top: 100px;
+    padding: 20px;
+    display: none;
+}
+
+[type=radio]:checked~label {
+    background: #2D3748;
+    border-radius: 6px;
+}
+
+[type=radio]:checked~label~.content {
+    display: block;
+}
+
+.output-container {
+    padding: 20px;
+    padding-bottom: 100px;
+}
+
+.output-message {
+    background: #2D3748;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.output-message h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.output-message p {
+    font-size: 16px;
+    line-height: 1.4;
+}
+
+
+.output-message img {
+    max-width: 256px;
+    height: auto;
+}
+
+.input-container {
+    position: fixed;
+    bottom: 0;
+    left: 250px;
+    right: 0;
+    height: 50px;
+}
+
+.input-container .input-content {
+    position: relative;
+    min-width: 500px;
+    width: 50%;
+    margin: 0 auto;
+}
+
+.input-container label input {
+    display: none;
+}
+
+.input-content>textarea,
+.input-content>input[type="text"] {
+    padding: 4px 40px;
+    height: 40px;
+    line-height: 30px;
+}
+
+.input-container button,
+.input-container label {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    position: absolute;
+    top: 4px;
+    line-height: 30px;
+    height: 40px;
+    width: 40px;
+    padding: 4px 6px;
+    z-index: 1;
+}
+
+.input-container label {
+    left: 2px;
+}
+
+.input-container button {
+    right: 2px;
+}
+
+.form {
+    width: 50%;
+    margin: 20px auto;
+}
+
+textarea,
+select,
+input[type="text"],
+input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    background-color: #2D3748;
+    color: #fff;
+    outline: none;
+    resize: none;
+}
+
+aside button,
+.form button,
+.ac-pushButton {
+    background-color: #10A37F;
+    border: none;
+    color: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    margin: 0 auto;
+    margin-top: 12px;
+    display: block;
+    width: 100%;
+    height: 30px;
+    padding: 4px 6px;
+}
+
+.form label {
+    display: block;
+}
+
+.form button {
+    display: inline-block;
+    margin: 5px;
+    width: 150px;
+}
+
+.buttons {
+    margin: 20px 0;
+}
+
+#delete-button {
+    background-color: #E53E3E;
+}
+
+#cancel-button {
+    background-color: #718096;
+}
+
+#cancel-button,
+#save-button {
+    float: right;
+}
+
+.input-container {
+    position: fixed;
+    left: 250px;
+    bottom: 0;
+    right: 25px;
+    background-color: #1A202C;
+    padding: 10px;
+    height: 80px;
+}
+
+.input-content {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.ac-adaptiveCard {
+    background-color: #4A5568 !important;
+    color: white !important;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.ac-textBlock,
+.ac-textRun {
+    color: white !important;
+}
+
+.ac-pushButton {
+    margin-top: 0;
+}
+
+#sidebar-toggle,
+#sidebar-toggle~label {
+    display: none;
+}
+
+.loader {
+    display: inline-block;
+    position: relative;
+    width: 80px;
+    height: 80px;
+}
+
+.loader div {
+    position: absolute;
+    top: 33px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: white;
+    animation-timing-function: cubic-bezier(0, 1, 1, 0);
+}
+
+.loader div:nth-child(1) {
+    left: 8px;
+    animation: loader1 0.6s infinite;
+}
+
+.loader div:nth-child(2) {
+    left: 8px;
+    animation: loader2 0.6s infinite;
+}
+
+.loader div:nth-child(3) {
+    left: 32px;
+    animation: loader2 0.6s infinite;
+}
+
+.loader div:nth-child(4) {
+    left: 56px;
+    animation: loader3 0.6s infinite;
+}
+
+@keyframes loader1 {
+    0% {
+        transform: scale(0);
+    }
+}
+
+@keyframes loader3 {
+    0% {
+        transform: scale(0);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes loader2 {
+    0% {
+        transform: translate(0, 0);
+    }
+
+    100% {
+        transform: translate(24px, 0);
+    }
+}
+
+@media (max-width: 768px) {
+    aside {
+        padding: 10px;
+        left: -250px;
+        z-index: 100;
+        transition: left 0.3s ease-in-out;
+    }
+
+    #sidebar-toggle:checked~aside {
+        left: 0;
+    }
+
+    #sidebar-toggle~label {
+        position: fixed;
+        top: 27px;
+        left: 8px;
+        z-index: 99;
+        font-size: 24px;
+        display: block;
+    }
+
+    #sidebar-toggle:checked~label {
+        inset: 0;
+    }
+
+    main {
+        margin-left: 0;
+    }
+
+    main h1 {
+        display: none;
+    }
+
+    .content {
+        top: 50px;
+    }
+
+    .input-container {
+        flex-direction: column;
+        align-items: center;
+        left: 0;
+        right: 0;
+    }
+
+    .input-container .input-content {
+        flex-direction: column;
+        width: 100%;
+        min-width: auto;
+        margin: 0;
+    }
+
+    .form {
+        width: 100%;
+    }
+
+    .form button {
+        width: calc((100% - 80px) / 3);
+    }
+    .form label,
+    .form textarea,
+    .form select,
+    .form .buttons,
+    .form input[type="text"],
+    .form input[type="file"] {
+        width: calc(100% - 60px);
+        margin-left: 30px;
+    }
+}
