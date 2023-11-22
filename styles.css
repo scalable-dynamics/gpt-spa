@@ -4,10 +4,6 @@
     box-sizing: border-box;
 }
 
-html {
-    overflow: hidden;
-}
-
 body {
     font-family: Arial, Helvetica, sans-serif;
     font-size: 16px;
@@ -202,7 +198,7 @@ main h1 {
     right: 2px;
 }
 
-form {
+.form {
     width: 50%;
     margin: 20px auto;
 }
@@ -223,7 +219,7 @@ input[type="file"] {
 }
 
 aside button,
-form button,
+.form button,
 .ac-pushButton {
     background-color: #10A37F;
     border: none;
@@ -238,11 +234,11 @@ form button,
     padding: 4px 6px;
 }
 
-form label {
+.form label {
     display: block;
 }
 
-form button {
+.form button {
     display: inline-block;
     margin: 5px;
     width: 150px;
@@ -417,19 +413,19 @@ form button {
         margin: 0;
     }
 
-    form {
+    .form {
         width: 100%;
     }
 
-    form button {
+    .form button {
         width: calc((100% - 80px) / 3);
     }
-    form label,
-    form textarea,
-    form select,
-    form .buttons,
-    form input[type="text"],
-    form input[type="file"] {
+    .form label,
+    .form textarea,
+    .form select,
+    .form .buttons,
+    .form input[type="text"],
+    .form input[type="file"] {
         width: calc(100% - 60px);
         margin-left: 30px;
     }

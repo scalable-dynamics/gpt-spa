@@ -58,7 +58,7 @@
                     <input type="radio" id="config-tab" name="tabs">
                     <label for="config-tab">Configure</label>
                     <div class="content">
-                        <form>
+                        <div class="form">
                             <label for="name">Name</label>
                             <input type="text" id="name" name="name" />
                             <label for="welcome">Welcome Message</label>
@@ -69,15 +69,15 @@
                             <textarea id="instructions" name="instructions" rows="20"></textarea>
                             <label>
                                 <input type="checkbox" id="use-files" name="use-files" />
-                                Use files
+                                Use files (will search user-uploaded files)
                             </label>
                             <label>
                                 <input type="checkbox" id="use-dalle" name="use-dalle" />
-                                Use DALL-E
+                                Use DALL-E (will return only images)
                             </label>
                             <label>
                                 <input type="checkbox" id="use-speech" name="use-speech" />
-                                Use speech
+                                Use speech (will speak every response)
                             </label>
                             <label for="voice-list">Voice</label>
                             <select id="voice-list">
@@ -93,7 +93,7 @@
                                 <button id="save-button">Save</button>
                                 <button id="cancel-button">Cancel</button>
                             </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -140,7 +140,7 @@
                 welcome: "Hello, how can I assist you today?",
                 instructions: "You are a helpful assistant.",
                 useFiles: true,
-                useDalle: true,
+                useDalle: false,
                 useSpeech: false,
                 voice: 'alloy'
             }
@@ -150,6 +150,7 @@
             gpts = JSON.parse(gpts_json)
         }
         let gpt = gpts.ChatGPT
+        let creatingGPT = false
         const openAI = initOpenAI(OPENAI_API_KEY, OPENAI_API_ORG);
         const vectorStore = createVectorStore(openAI.getEmbeddings);
         let sendConversationMessage = createConversation(gpt.instructions, openAI.getCompletion, openAI.getImage, vectorStore.vectorSearch);
@@ -189,31 +190,38 @@
             useSpeechInput.checked = false;
             voiceList.value = 'alloy';
             configTab.checked = true;
+            creatingGPT = true;
         });
         deleteButton.addEventListener('click', (e) => {
-            e.preventDefault();
+            if (creatingGPT || gpt.name === "ChatGPT") {
+                alert('You cannot delete this GPT')
+                return
+            }
             if (confirm('Are you sure you want to delete this GPT?')) {
-                delete gpts[nameInput.value];
+                delete gpts[gpt.name];
                 localStorage.setItem('gpts', JSON.stringify(gpts));
                 renderSidebar();
                 loadGPT('ChatGPT');
             }
         });
         cancelButton.addEventListener('click', (e) => {
-            e.preventDefault();
-            loadGPT(nameInput.value);
+            creatingGPT = false;
+            loadGPT(gpt.name);
         });
         saveButton.addEventListener('click', (e) => {
-            e.preventDefault();
             if (saveGPT()) {
+                creatingGPT = false;
                 loadGPT(nameInput.value);
             }
         });
         chatTab.addEventListener('click', (e) => {
-            if (saveGPT()) {
-                loadGPT(nameInput.value);
-            } else {
-                e.preventDefault();
+            if (gpt.name !== "ChatGPT") {
+                if (saveGPT()) {
+                    creatingGPT = false;
+                    loadGPT(nameInput.value);
+                } else {
+                    e.preventDefault();
+                }
             }
         });
 
@@ -235,7 +243,11 @@
         }
 
         function saveGPT() {
-            const name = nameInput.value;
+            const name = nameInput.value.trim();
+            if (!creatingGPT && gpt.name === "ChatGPT" && name !== "ChatGPT") {
+                alert('You cannot change the name of this GPT')
+                return
+            }
             const welcome = welcomeInput.value;
             const icon = iconInput.files[0];
             const instructions = instructionsInput.value;
@@ -247,11 +259,15 @@
                 alert('Please enter a name')
                 return
             }
+            if (!welcome) {
+                alert('Please enter the welcome message')
+                return
+            }
             if (!instructions) {
                 alert('Please enter the instructions')
                 return
             }
-            const gpt = {
+            const gptData = {
                 name,
                 welcome,
                 icon,
@@ -261,7 +277,12 @@
                 useSpeech,
                 voice
             };
-            gpts[name] = gpt;
+            gpts[name] = gptData;
+            if (!creatingGPT && name !== gpt.name) {
+                console.log('deleting', gpt.name, name, gpts)
+                delete gpts[gpt.name]
+                console.log('deleted', gpts)
+            }
             localStorage.setItem('gpts', JSON.stringify(gpts));
             renderSidebar();
             return true
@@ -309,6 +330,8 @@
             if (!content) {
                 message.innerHTML = loading
             }
+            document.body.scrollTop = document.body.scrollHeight;
+            document.documentElement.scrollTop = document.documentElement.scrollHeight
             return (text, replace) => {
                 if (!content) {
                     message.innerHTML = ""
@@ -321,6 +344,8 @@
                 } else {
                     message.innerHTML = renderMarkdown((content += text))
                 }
+                document.body.scrollTop = document.body.scrollHeight;
+                document.documentElement.scrollTop = document.documentElement.scrollHeight
             }
         }
 
@@ -343,14 +368,14 @@
                 userImages = []
             }
             const appendOutput = addOutput("", gpt.name)
-            if (useDalleInput.checked) {
-                const image = await sendConversationMessage(input, undefined, useFilesInput.checked, true);
+            if (gpt.useDalle) {
+                const image = await sendConversationMessage(input, undefined, gpt.useFiles, true);
                 if (image) {
                     appendOutput(addImage(image))
                 }
             } else {
-                const result = await sendConversationMessage(input, appendOutput, useFilesInput.checked);
-                if (useSpeechInput.checked) {
+                const result = await sendConversationMessage(input, appendOutput, gpt.useFiles);
+                if (gpt.useSpeech) {
                     await openAI.playSpeech(result, voiceList.value);
                 }
             }
