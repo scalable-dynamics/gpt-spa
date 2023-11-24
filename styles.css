@@ -198,7 +198,8 @@ main h1 {
     right: 2px;
 }
 
-.form {
+#form,
+.buttons {
     width: 50%;
     margin: 20px auto;
 }
@@ -219,7 +220,7 @@ input[type="file"] {
 }
 
 aside button,
-.form button,
+.buttons button,
 .ac-pushButton {
     background-color: #10A37F;
     border: none;
@@ -234,18 +235,14 @@ aside button,
     padding: 4px 6px;
 }
 
-.form label {
+#form label {
     display: block;
 }
 
-.form button {
+.buttons button {
     display: inline-block;
     margin: 5px;
     width: 150px;
-}
-
-.buttons {
-    margin: 20px 0;
 }
 
 #delete-button {
@@ -413,19 +410,19 @@ aside button,
         margin: 0;
     }
 
-    .form {
+    #form {
         width: 100%;
     }
 
-    .form button {
+    .buttons button {
         width: calc((100% - 80px) / 3);
     }
-    .form label,
-    .form textarea,
-    .form select,
-    .form .buttons,
-    .form input[type="text"],
-    .form input[type="file"] {
+    #form label,
+    #form textarea,
+    #form select,
+    .buttons,
+    #form input[type="text"],
+    #form input[type="file"] {
         width: calc(100% - 60px);
         margin-left: 30px;
     }

@@ -58,41 +58,11 @@
                     <input type="radio" id="config-tab" name="tabs">
                     <label for="config-tab">Configure</label>
                     <div class="content">
-                        <div class="form">
-                            <label for="name">Name</label>
-                            <input type="text" id="name" name="name" />
-                            <label for="welcome">Welcome Message</label>
-                            <input type="text" id="welcome" name="welcome" />
-                            <label for="icon" style="display: none;">Icon</label>
-                            <input type="file" style="display: none;" id="icon" name="icon" placeholder="Image" />
-                            <label for="instructions">Instructions</label>
-                            <textarea id="instructions" name="instructions" rows="20"></textarea>
-                            <label>
-                                <input type="checkbox" id="use-files" name="use-files" />
-                                Use files (will search user-uploaded files)
-                            </label>
-                            <label>
-                                <input type="checkbox" id="use-dalle" name="use-dalle" />
-                                Use DALL-E (will return only images)
-                            </label>
-                            <label>
-                                <input type="checkbox" id="use-speech" name="use-speech" />
-                                Use speech (will speak every response)
-                            </label>
-                            <label for="voice-list">Voice</label>
-                            <select id="voice-list">
-                                <option value="alloy" selected>Alloy</option>
-                                <option value="echo">Echo</option>
-                                <option value="fable">Fable</option>
-                                <option value="onyx">Onyx</option>
-                                <option value="nova">Nova</option>
-                                <option value="shimmer">Shimmer</option>
-                            </select>
-                            <div class="buttons">
-                                <button id="delete-button">Delete</button>
-                                <button id="save-button">Save</button>
-                                <button id="cancel-button">Cancel</button>
-                            </div>
+                        <div id="form"></div>
+                        <div class="buttons">
+                            <button id="delete-button">Delete</button>
+                            <button id="save-button">Save</button>
+                            <button id="cancel-button">Cancel</button>
                         </div>
                     </div>
                 </div>
@@ -105,10 +75,11 @@
         import { createConversation } from './js/chat.js';
         import { contentCard, confirmationCard, questionCard, configCard, useCardMarkdownRenderer } from './js/cards.js';
         import { onFilesDropped } from './js/files.js';
+        import initGPTs from './js/gpts.js';
         import initOpenAI from './js/openai.js';
         import createVectorStore from './js/vectors.js';
 
-        useCardMarkdownRenderer(renderMarkdown)
+        useCardMarkdownRenderer(text => markdownit().render(text))
 
         const outputContainer = document.getElementById('output-container');
         const OPENAI_API_KEY = await configCard(outputContainer, 'OPENAI_API_KEY')
@@ -117,43 +88,29 @@
         const links = document.getElementById('gpt-links');
         const sidebarToggle = document.getElementById('sidebar-toggle');
         const createButton = document.getElementById('create-button');
+        const deleteButton = document.getElementById('delete-button');
+        const cancelButton = document.getElementById('cancel-button');
+        const saveButton = document.getElementById('save-button');
         const gptName = document.getElementById('gpt-name');
         const chatInput = document.getElementById('chat-input');
         const chatUpload = document.getElementById('upload');
         const sendButton = document.getElementById('send-button');
-        const nameInput = document.getElementById('name');
-        const welcomeInput = document.getElementById('welcome');
-        const iconInput = document.getElementById('icon');
-        const instructionsInput = document.getElementById('instructions');
-        const useFilesInput = document.getElementById('use-files');
-        const useDalleInput = document.getElementById('use-dalle');
-        const useSpeechInput = document.getElementById('use-speech');
-        const voiceList = document.getElementById('voice-list');
-        const deleteButton = document.getElementById('delete-button');
-        const cancelButton = document.getElementById('cancel-button');
-        const saveButton = document.getElementById('save-button');
         const chatTab = document.getElementById('chat-tab');
         const configTab = document.getElementById('config-tab');
-        let gpts = {
-            ChatGPT: {
-                name: "ChatGPT",
-                welcome: "Hello, how can I assist you today?",
-                instructions: "You are a helpful assistant.",
-                useFiles: true,
-                useDalle: false,
-                useSpeech: false,
-                voice: 'alloy'
-            }
-        }
-        const gpts_json = localStorage.getItem('gpts')
-        if (gpts_json) {
-            gpts = JSON.parse(gpts_json)
-        }
-        let gpt = gpts.ChatGPT
-        let creatingGPT = false
+        let gpts = initGPTs(document.getElementById('form'), {
+            name: "ChatGPT",
+            welcome: "Hello, how can I assist you today?",
+            instructions: "You are a helpful assistant.",
+            useFiles: true,
+            useDalle: false,
+            useSpeech: false,
+            voice: 'alloy'
+        });
+        let gpt;
+        let creatingGPT = false;
+        let sendConversationMessage;
         const openAI = initOpenAI(OPENAI_API_KEY, OPENAI_API_ORG);
         const vectorStore = createVectorStore(openAI.getEmbeddings);
-        let sendConversationMessage = createConversation(gpt.instructions, openAI.getCompletion, openAI.getImage, vectorStore.vectorSearch);
         let userImages = []
 
         renderSidebar()
@@ -181,14 +138,7 @@
             }
         });
         createButton.addEventListener('click', (e) => {
-            nameInput.value = '';
-            welcomeInput.value = '';
-            iconInput.value = '';
-            instructionsInput.value = '';
-            useFilesInput.checked = false;
-            useDalleInput.checked = false;
-            useSpeechInput.checked = false;
-            voiceList.value = 'alloy';
+            gpts.create();
             configTab.checked = true;
             creatingGPT = true;
         });
@@ -197,9 +147,7 @@
                 alert('You cannot delete this GPT')
                 return
             }
-            if (confirm('Are you sure you want to delete this GPT?')) {
-                delete gpts[gpt.name];
-                localStorage.setItem('gpts', JSON.stringify(gpts));
+            if (gpts.remove(gpt.name)) {
                 renderSidebar();
                 loadGPT('ChatGPT');
             }
@@ -226,88 +174,31 @@
         });
 
         function renderSidebar() {
-            links.innerHTML = ''
-            for (let key in gpts) {
-                const li = document.createElement('li')
-                const a = document.createElement('a')
-                a.innerText = gpts[key].name
-                a.href = 'javascript:void(0)'
-                li.appendChild(a)
-                links.appendChild(li)
-                a.addEventListener('click', (e) => {
-                    e.preventDefault()
-                    sidebarToggle.checked = false
-                    loadGPT(e.target.innerText)
-                })
-            }
+            gpts.renderList(links, (name) => {
+                sidebarToggle.checked = false
+                loadGPT(name)
+            })
         }
 
         function saveGPT() {
-            const name = nameInput.value.trim();
+            const name = document.getElementById('name').value;
             if (!creatingGPT && gpt.name === "ChatGPT" && name !== "ChatGPT") {
                 alert('You cannot change the name of this GPT')
                 return
             }
-            const welcome = welcomeInput.value;
-            const icon = iconInput.files[0];
-            const instructions = instructionsInput.value;
-            const useFiles = useFilesInput.checked;
-            const useDalle = useDalleInput.checked;
-            const useSpeech = useSpeechInput.checked;
-            const voice = voiceList.value;
-            if (!name) {
-                alert('Please enter a name')
-                return
+            if (gpts.save(gpt.name)) {
+                renderSidebar();
+                return true
             }
-            if (!welcome) {
-                alert('Please enter the welcome message')
-                return
-            }
-            if (!instructions) {
-                alert('Please enter the instructions')
-                return
-            }
-            const gptData = {
-                name,
-                welcome,
-                icon,
-                instructions,
-                useFiles,
-                useDalle,
-                useSpeech,
-                voice
-            };
-            gpts[name] = gptData;
-            if (!creatingGPT && name !== gpt.name) {
-                console.log('deleting', gpt.name, name, gpts)
-                delete gpts[gpt.name]
-                console.log('deleted', gpts)
-            }
-            localStorage.setItem('gpts', JSON.stringify(gpts));
-            renderSidebar();
-            return true
         }
 
         function loadGPT(name) {
-            gpt = gpts[name]
+            gpt = gpts.load(name)
             sendConversationMessage = createConversation(gpt.instructions, openAI.getCompletion, openAI.getImage, vectorStore.vectorSearch);
-            nameInput.value = gpt.name
-            welcomeInput.value = gpt.welcome
-            iconInput.value = ''
-            instructionsInput.value = gpt.instructions
-            useFilesInput.checked = gpt.useFiles
-            useDalleInput.checked = gpt.useDalle
-            useSpeechInput.checked = gpt.useSpeech
-            voiceList.value = gpt.voice
             gptName.innerText = gpt.name
             outputContainer.innerHTML = ""
             addOutput(gpt.welcome, gpt.name)
             chatTab.checked = true
-        }
-
-        function renderMarkdown(text) {
-            const md = markdownit();
-            return md.render(text);
         }
 
         function addImage(url) {
