@@ -76,6 +76,16 @@ main h1 {
     position: absolute;
 }
 
+#share-button {
+    position: absolute;
+    top: 27px;
+    right: 8px;
+    background-color: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+}
+
 .tabs {
     background: #4A5568;
     width: 350px;
@@ -172,6 +182,7 @@ main h1 {
 .input-content>textarea,
 .input-content>input[type="text"] {
     padding: 4px 40px;
+    padding-left: 72px;
     height: 40px;
     line-height: 30px;
 }
@@ -188,13 +199,23 @@ main h1 {
     width: 40px;
     padding: 4px 6px;
     z-index: 1;
+    color: #fff;
+    outline: none;
 }
 
 .input-container label {
     left: 2px;
 }
 
-.input-container button {
+.input-container #mic-button {
+    left: 32px;
+}
+
+.input-container #mic-button.active {
+    color: red;
+}
+
+.input-container #send-button {
     right: 2px;
 }
 
@@ -233,6 +254,10 @@ aside button,
     width: 100%;
     height: 30px;
     padding: 4px 6px;
+}
+
+#form {
+    min-width: 700px;
 }
 
 #form label {
@@ -283,8 +308,16 @@ aside button,
 }
 
 .ac-textBlock,
+.ac-textBlock a,
 .ac-textRun {
     color: white !important;
+}
+
+.ac-textBlock blockquote {
+    border-left: 3px solid #fff;
+    padding-left: 10px;
+    margin-left: 20px;
+    margin-bottom: 10px;
 }
 
 .ac-pushButton {
@@ -412,11 +445,13 @@ aside button,
 
     #form {
         width: 100%;
+        min-width: auto;
     }
 
     .buttons button {
         width: calc((100% - 80px) / 3);
     }
+
     #form label,
     #form textarea,
     #form select,

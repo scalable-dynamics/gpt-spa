@@ -3,17 +3,30 @@ export default (container, ...defaultGPTs) => {
         obj[gpt.name] = gpt;
         return obj;
     }, {});
+    for (let gpt of defaultGPTs) {
+        if (typeof (gpt.action) === 'function') {
+            gpts[gpt.name] = gpt;
+        }
+    }
     const form = createForm(container);
     return {
-        create() {
+        create(name, gpt) {
+            if (name && gpt) {
+                gpts[name] = gpt;
+                return;
+            }
             form.name.value = '';
+            form.description.value = '';
             form.welcome.value = '';
             form.icon.value = '';
             form.instructions.value = '';
-            form.useFiles.checked = false;
-            form.useDalle.checked = false;
-            form.useSpeech.checked = false;
             form.voice.value = 'alloy';
+            for (let tool of form.tools) {
+                tool.checked = false;
+            }
+        },
+        getName() {
+            return form.name.value.trim();
         },
         save(name) {
             const newName = form.name.value.trim();
@@ -29,20 +42,23 @@ export default (container, ...defaultGPTs) => {
                 alert('Please enter the instructions')
                 return
             }
+            const tools = container.querySelectorAll('[name="tool-selection"]')
             gpts[newName] = {
                 name: newName,
+                description: form.description.value.trim(),
                 welcome: form.welcome.value.trim(),
                 icon: '',//TODO
                 instructions: form.instructions.value.trim(),
-                useFiles: form.useFiles.checked,
-                useDalle: form.useDalle.checked,
-                useSpeech: form.useSpeech.checked,
-                voice: form.voice.value
+                voice: form.voice.value,
+                tools: Array.from(tools).filter((tool) => tool.checked).map((tool) => tool.value),
+                files: form.selected_files || []
             };
             if (name && newName !== name) {
+                console.log('deleting', name)
                 delete gpts[name]
             }
             localStorage.setItem('gpts', JSON.stringify(gpts));
+            return true;
         },
         remove(name) {
             if (confirm('Are you sure you want to delete this GPT?')) {
@@ -57,13 +73,71 @@ export default (container, ...defaultGPTs) => {
                 return;
             }
             form.name.value = gpt.name;
+            form.description.value = gpt.description || '';
             form.welcome.value = gpt.welcome;
             form.icon.value = '';
             form.instructions.value = gpt.instructions;
-            form.useFiles.checked = gpt.useFiles;
-            form.useDalle.checked = gpt.useDalle;
-            form.useSpeech.checked = gpt.useSpeech;
-            form.voice.value = gpt.voice;
+            form.voice.value = gpt.voice || 'alloy';
+            form.icon.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = function () {
+                        form.selected_icon = reader.result;
+                    }
+                    reader.readAsDataURL(file);
+                }
+            }
+            form.selected_icon = '';
+            form.selected_files = gpt.files || [];
+            form.file.onchange = (e) => {
+                form.selected_files = [];
+                for (let file of e.target.files) {
+                    const reader = new FileReader();
+                    reader.onloadend = function () {
+                        form.selected_files.push({
+                            name: file.name,
+                            type: file.type,
+                            content: reader.result
+                        });
+                        renderFiles();
+                    }
+                    reader.readAsText(file);
+                }
+                form.file.value = '';
+            }
+            function renderFiles() {
+                if (form.selected_files) {
+                    form.files.innerHTML = form.selected_files.map(({ name }) => `<label>
+    <input type="checkbox" name="file-selection" value="${name}" checked />
+    ${name}
+</label>`).join('\n')
+                    const files = container.querySelectorAll('[name="file-selection"]')
+                    for (let file of files) {
+                        file.onchange = (e) => {
+                            const name = e.target.value;
+                            form.selected_files = form.selected_files.filter((file) => file.name !== name)
+                            renderFiles();
+                        }
+                    }
+                }
+            }
+            renderFiles();
+            form.tools.innerHTML = Object.keys(gpts).filter((tool) => gpts[tool].description).map((tool) => `<label>
+    <input type="checkbox" name="tool-selection" value="${tool}" />
+    Use ${tool}
+</label>`).join("\n")
+            const tools = container.querySelectorAll('[name="tool-selection"]')
+            for (let tool of tools) {
+                if (tool.value === gpt.name) {
+                    tool.parentNode.style.display = 'none';
+                } else {
+                    tool.parentNode.style.display = 'block';
+                    if (gpt.tools) {
+                        tool.checked = gpt.tools.includes(tool.value);
+                    }
+                }
+            }
             return gpt;
         },
         list() {
@@ -71,7 +145,8 @@ export default (container, ...defaultGPTs) => {
         },
         renderList(ul, onSelect) {
             ul.innerHTML = ''
-            for (let { name } of this.list()) {
+            for (let { name, action } of this.list()) {
+                if (typeof action === 'function') continue;
                 const li = document.createElement('li')
                 const a = document.createElement('a')
                 a.innerText = name
@@ -91,24 +166,14 @@ function createForm(container) {
     container.innerHTML = `
     <label for="name">Name</label>
     <input type="text" id="name" name="name" />
+    <label for="description">Tool Description</label>
+    <input type="text" id="description" name="description" />
     <label for="welcome">Welcome Message</label>
     <input type="text" id="welcome" name="welcome" />
     <label for="icon" style="display: none;">Icon</label>
-    <input type="file" style="display: none;" id="icon" name="icon" placeholder="Image" />
+    <input type="file" style="display: none;" id="icon" name="icon" />
     <label for="instructions">Instructions</label>
-    <textarea id="instructions" name="instructions" rows="20"></textarea>
-    <label>
-        <input type="checkbox" id="use-files" name="use-files" />
-        Use files (will search user-uploaded files)
-    </label>
-    <label>
-        <input type="checkbox" id="use-dalle" name="use-dalle" />
-        Use DALL-E (will return only images)
-    </label>
-    <label>
-        <input type="checkbox" id="use-speech" name="use-speech" />
-        Use speech (will speak every response)
-    </label>
+    <textarea id="instructions" name="instructions" rows="15"></textarea>
     <label for="voice-list">Voice</label>
     <select id="voice-list">
         <option value="alloy" selected>Alloy</option>
@@ -118,18 +183,21 @@ function createForm(container) {
         <option value="nova">Nova</option>
         <option value="shimmer">Shimmer</option>
     </select>
+    <label>Tools</label>
+    <div id="gpt-tools"></div>
+    <label>Files</label>
+    <div id="gpt-files"></div>
+    <input type="file" id="gpt-file" name="gpt-file" multiple />
     `;
     return {
         name: container.querySelector('#name'),
+        description: container.querySelector('#description'),
         welcome: container.querySelector('#welcome'),
         icon: container.querySelector('#icon'),
         instructions: container.querySelector('#instructions'),
-        useFiles: container.querySelector('#use-files'),
-        useDalle: container.querySelector('#use-dalle'),
-        useSpeech: container.querySelector('#use-speech'),
         voice: container.querySelector('#voice-list'),
-        deleteButton: container.querySelector('#delete-button'),
-        saveButton: container.querySelector('#save-button'),
-        cancelButton: container.querySelector('#cancel-button')
+        tools: container.querySelector('#gpt-tools'),
+        file: container.querySelector('#gpt-file'),
+        files: container.querySelector('#gpt-files')
     }
 }

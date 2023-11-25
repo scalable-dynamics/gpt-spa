@@ -5,14 +5,61 @@ export default function (apiKey, apiOrg) {
     }
     return {
         getCompletion: get_completion.bind(null, headers),
+        getVision: get_vision.bind(null, headers),
         getImage: get_image.bind(null, headers),
         playSpeech: play_speech.bind(null, headers),
         getTranscription: get_transcription.bind(null, headers),
-        getEmbeddings: get_vectors.bind(null, headers)
+        getEmbeddings: get_vectors.bind(null, headers),
+        async getIntent(messages, tools, max_tokens = 100) {
+            const response = await fetch("https://api.openai.com/v1/chat/completions", {
+                headers: {
+                    ...headers,
+                    'Content-Type': 'application/json'
+                },
+                method: 'POST',
+                body: JSON.stringify({
+                    model: 'gpt-4-1106-preview',//'gpt-3.5-turbo-1106',
+                    response_format: { "type": "json_object" },
+                    messages: [
+                        {
+                            role: 'system',
+                            content: `**Use these rules for your response:**
+- Only return a JSON object containing an array of tools you want to use. (e.g. '{"tools": [...]}')
+- Use one or more of the following tools, each tool usage should be an object added to the JSON ARRAY (e.g. '[{"name": "tool name", "input": ""}, ...]'):
+- You can use the same tool multiple times if needed.
+- The tool input should be a string with a prompt for the tool.
+- Add the tools in the order you want them to be used.
+- Only use the tools for providing a response, do not include any other text unless it is part of the tool input.
+
+## Tools
+${tools.map(({ name, description }) => `${name}: ${description || ''}`).join("\n")}
+`
+                        },
+                        ...messages
+                    ],
+                    max_tokens,
+                    temperature: 0,
+                    top_p: 1
+                })
+            })
+            const data = await response.json()
+            if (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+                if (data.choices[0].finish_reason === "length" && max_tokens < 1000) return this.getIntent(messages, tools, max_tokens * 2)
+                try {
+                    const json = data.choices[0].message.content.trim()
+                    return JSON.parse(json).tools
+                } catch (e) {
+                    console.error(e)
+                    return []
+                }
+            } else {
+                return []
+            }
+        }
     }
 }
 
-async function get_completion(headers, messages, onTextReceived = undefined, useVision = false, max_tokens = 150) {
+async function get_completion(headers, messages, onTextReceived = undefined, max_tokens = 150) {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
         headers: {
             ...headers,
@@ -20,9 +67,7 @@ async function get_completion(headers, messages, onTextReceived = undefined, use
         },
         method: 'POST',
         body: JSON.stringify({
-            //TODO: not working with successive requests (since image content gets added to the messages), but acording to sama its the 'same'
-            //model: useVision ? 'gpt-4-vision-preview' : 'gpt-4-1106-preview',
-            model: 'gpt-4-vision-preview',
+            model: 'gpt-4-1106-preview',
             messages,
             max_tokens,
             temperature: 0.1,
@@ -55,7 +100,7 @@ async function get_completion(headers, messages, onTextReceived = undefined, use
                             if (data.choices && data.choices.length > 0) {
                                 if (data.choices[0].finish_reason === "length" && max_tokens < 1000) {
                                     onTextReceived("", true)
-                                    return await get_completion(headers, onTextReceived, useVision, max_tokens * 2)
+                                    return await get_completion(headers, messages, onTextReceived, max_tokens * 2)
                                 }
                                 const text = data.choices[0].delta.content;
                                 if (!text) continue;
@@ -74,13 +119,53 @@ async function get_completion(headers, messages, onTextReceived = undefined, use
     } else {
         const data = await response.json()
         if (data && data.choices && data.choices[0] && data.choices[0].finish_reason === "length" && max_tokens < 1000) {
-            return await get_completion(headers, onTextReceived, useVision, max_tokens * 2)
+            return await get_completion(headers, messages, onTextReceived, max_tokens * 2)
         }
         else if (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
             return data.choices[0].message.content.trim()
         } else {
             return ""
         }
+    }
+}
+
+async function get_vision(headers, image_url, max_tokens = 150) {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        headers: {
+            ...headers,
+            'Content-Type': 'application/json'
+        },
+        method: 'POST',
+        body: JSON.stringify({
+            model: 'gpt-4-vision-preview',
+            messages: [
+                {
+                    role: 'user',
+                    content: [
+                        {
+                            type: 'text',
+                            text: 'Describe the image using great detail, using one or two sentences.'
+                        },
+                        {
+                            type: 'image',
+                            image_url
+                        }
+                    ]
+                }
+            ],
+            max_tokens,
+            temperature: 0.1,
+            top_p: 1
+        })
+    })
+    const data = await response.json()
+    if (data && data.choices && data.choices[0] && data.choices[0].finish_details && data.choices[0].finish_details.type === "max_tokens" && max_tokens < 500) {
+        return await get_vision(headers, images, max_tokens * 2)
+    }
+    else if (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+        return data.choices[0].message.content.trim()
+    } else {
+        return ""
     }
 }
 
@@ -100,7 +185,10 @@ async function get_image(headers, prompt) {
     })
     const image = await response.json()
     if (image && image.data && image.data[0] && image.data[0].url) {
-        return image.data[0].url
+        return {
+            url: image.data[0].url,
+            alt: image.data[0].revised_prompt
+        }
     }
 }
 
