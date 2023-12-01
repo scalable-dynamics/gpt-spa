@@ -76,6 +76,16 @@ main h1 {
     position: absolute;
 }
 
+#share-button {
+    position: absolute;
+    top: 27px;
+    right: 8px;
+    background-color: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+}
+
 .tabs {
     background: #4A5568;
     width: 350px;
@@ -150,15 +160,21 @@ main h1 {
     height: auto;
 }
 
+
 .input-container {
     position: fixed;
-    bottom: 0;
     left: 250px;
-    right: 0;
-    height: 50px;
+    bottom: 0;
+    right: 25px;
+    background-color: #1A202C;
+    padding: 10px;
+    min-height: 80px;
 }
 
 .input-container .input-content {
+    display: flex;
+    gap: 10px;
+    align-items: center;
     position: relative;
     min-width: 500px;
     width: 50%;
@@ -172,6 +188,7 @@ main h1 {
 .input-content>textarea,
 .input-content>input[type="text"] {
     padding: 4px 40px;
+    padding-left: 72px;
     height: 40px;
     line-height: 30px;
 }
@@ -182,23 +199,43 @@ main h1 {
     border: none;
     cursor: pointer;
     position: absolute;
-    top: 4px;
+    bottom: 6px;
     line-height: 30px;
     height: 40px;
     width: 40px;
     padding: 4px 6px;
     z-index: 1;
+    color: #fff;
+    outline: none;
 }
 
 .input-container label {
     left: 2px;
 }
 
-.input-container button {
+.input-container #mic-button {
+    left: 32px;
+}
+
+.input-container #mic-button.active {
+    color: red;
+}
+
+.input-container #send-button {
     right: 2px;
 }
 
-.form {
+textarea.multiline {
+    max-height: 185px;
+    line-height: 25px;
+}
+
+.input-container textarea.multiline~#send-button {
+    right: 12px;
+}
+
+#form,
+.buttons {
     width: 50%;
     margin: 20px auto;
 }
@@ -219,7 +256,7 @@ input[type="file"] {
 }
 
 aside button,
-.form button,
+.buttons button,
 .ac-pushButton {
     background-color: #10A37F;
     border: none;
@@ -234,18 +271,18 @@ aside button,
     padding: 4px 6px;
 }
 
-.form label {
+#form {
+    min-width: 700px;
+}
+
+#form label {
     display: block;
 }
 
-.form button {
+.buttons button {
     display: inline-block;
     margin: 5px;
     width: 150px;
-}
-
-.buttons {
-    margin: 20px 0;
 }
 
 #delete-button {
@@ -261,22 +298,6 @@ aside button,
     float: right;
 }
 
-.input-container {
-    position: fixed;
-    left: 250px;
-    bottom: 0;
-    right: 25px;
-    background-color: #1A202C;
-    padding: 10px;
-    height: 80px;
-}
-
-.input-content {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
 .ac-adaptiveCard {
     background-color: #4A5568 !important;
     color: white !important;
@@ -286,8 +307,16 @@ aside button,
 }
 
 .ac-textBlock,
+.ac-textBlock a,
 .ac-textRun {
     color: white !important;
+}
+
+.ac-textBlock blockquote {
+    border-left: 3px solid #fff;
+    padding-left: 10px;
+    margin-left: 20px;
+    margin-bottom: 10px;
 }
 
 .ac-pushButton {
@@ -413,20 +442,95 @@ aside button,
         margin: 0;
     }
 
-    .form {
+    #form {
         width: 100%;
+        min-width: auto;
     }
 
-    .form button {
+    .buttons button {
         width: calc((100% - 80px) / 3);
     }
-    .form label,
-    .form textarea,
-    .form select,
-    .form .buttons,
-    .form input[type="text"],
-    .form input[type="file"] {
+
+    #form label,
+    #form textarea,
+    #form select,
+    .buttons,
+    #form input[type="text"],
+    #form input[type="file"] {
         width: calc(100% - 60px);
         margin-left: 30px;
+    }
+}
+
+@media print {
+
+    aside,
+    .input-container,
+    .buttons,
+    .tabs .tab label,
+    main h1 {
+        display: none;
+    }
+
+    main {
+        margin-left: 0;
+    }
+
+    main h1 {
+        display: none;
+    }
+
+    .content {
+        top: 0;
+    }
+
+    .output-container {
+        padding: 0;
+    }
+
+    .output-message {
+        background: transparent;
+        border-radius: 0;
+        padding: 0;
+        margin-bottom: 0;
+    }
+
+    .output-message h3 {
+        font-size: 18px;
+        margin-bottom: 0;
+    }
+
+    .output-message p {
+        font-size: 16px;
+    }
+
+    .output-message img {
+        max-width: 256px;
+        height: auto;
+    }
+
+    .ac-adaptiveCard {
+        background-color: transparent !important;
+        color: black !important;
+        border-radius: 0;
+        padding: 0;
+        margin-bottom: 0;
+    }
+
+    .ac-textBlock,
+    .ac-textBlock a,
+    .ac-textRun {
+        color: black !important;
+    }
+
+    .ac-textBlock blockquote {
+        border-left: 3px solid #000;
+        padding-left: 10px;
+        margin-left: 20px;
+        margin-bottom: 10px;
+    }
+
+    .ac-pushButton {
+        margin-top: 0;
     }
 }

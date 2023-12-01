@@ -66,8 +66,7 @@ export function questionCard(question, answers = [], defaultValue = "") {
             type: "Input.Text",
             id: "answer",
             label: question,
-            value: defaultValue,
-            isMultiline: question.indexOf('prompt') > -1
+            value: defaultValue
         }];
         card.actions.push({
             type: 'Action.Submit',
@@ -94,7 +93,7 @@ export function questionCard(question, answers = [], defaultValue = "") {
     }
 }
 
-export async function configCard(outputContainer, option, text = `Enter the value for ${option}:`, defaultValue = undefined) {
+export async function configCard(outputContainer, option, text = `Enter the value for ${option} (will only be stored locally in your browser):`, defaultValue = undefined) {
     const value = getQueryString(option) || localStorage.getItem(option)
     if (value) return value
     const question = questionCard(text, undefined, defaultValue)
@@ -111,6 +110,7 @@ export function useCardMarkdownRenderer(render) {
         result.outputHtml = render(text);
         result.didProcess = true;
     };
+    return render
 }
 
 function getQueryString(key) {

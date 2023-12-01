@@ -1,35 +1,51 @@
 # gpt-spa (created by Greg DeCarlo - @mrinreality1 on X)
-A customizable GPT in a single page, using OpenAI models text-embedding-ada-002, tts-1, whisper-1, dall-e-3, and gpt-4-vision-preview.
+Customizable GPTs stored on your local browser, using OpenAI models text-embedding-ada-002, tts-1, whisper-1, dall-e-3, and gpt-4-vision-preview. Enhanced with Azure OpenAI support!
 
-### Create custom GPTs!
-![image](https://github.com/scalable-dynamics/gpt-spa/assets/47045161/da15d179-7d37-4093-a014-03b630ffa89c)
+### Create Custom GPTs!
+![Screenshot of the gpt-spa application](https://github.com/scalable-dynamics/gpt-spa/assets/47045161/4d459004-353a-44bf-96b5-541bf0eaed16)
 
-### Details
-- This example does not use the OpenAI Assistants API, but it does allow you to add files to a local vector db and perform retrieval (RAG) before interacting with the GPT
-- Image files can also be uploaded, which will be sent to the GPT 4 Vision model for analysis. Selecting 'Use DALL-E' allows the user to generate an image based on the current conversation (including document retrieval and images)
-- Selecting 'Use Speech' will speak the output using the new OpenAI Text-to-Speech model
+### Key Features
+- Configure GPTs by specifying system prompts and selecting from files, tools, and other GPT models.
+- Utilize local vector database for document retrieval (RAG) without relying on the OpenAI Assistants API.
+- Upload image files for analysis using the GPT-4 Vision model. Activate 'Image Generation (DALL-E)' in the Configure tab to generate images based on conversation context.
+- Activate 'Text-to-Speech (TTS)' to hear outputs using OpenAI's Text-to-Speech model.
+- Share your GPT configurations and conversations easily with a URL, ensuring privacy as data is stored only in browser local storage or the URL hash (no server-side data storage).
 
-### Usage
-* Enter the OPENAI_API_KEY (this will be saved in localStorage!)
-* Enter your OPENAI_API_ORG (if applicable)
-* Define your GPT (enter system prompt, cannot be blank)
-* Chat with your GPT using the provided controls (must complete steps above)
+### Built-in Tools
+- Image Generation (DALL-E)
+- Text-to-Speech (TTS)
+- Bing Search (requires API Key)
+- Daily Quotation Generator (powered by GPT)
 
-### Features
-1. Have a conversation with your GPT
-2. Drag/Drop PDF or text-based files for retrieval-based search
-3. Drag/Drop image files and ask your GPT about it
-4. Use DALL-E and ask your GPT to generate an image (prompt will be generated using the context)
-5. Use Speech and select a voice to hear your GPT outloud
-6. [new!] Add multiple GPTs and choose between them
-7. [new!] GPT builder interface for creating a GPT
+### Usage Instructions
+1. Enter your OPENAI_API_KEY (stored locally)
+2. Optionally enter your OPENAI_API_ORG
+3. Use the sidebar to select or create custom GPTs
+4. Engage with your GPT using the provided controls. Restart or switch GPTs to initiate new conversations
 
-### Upcoming Features
-8. Talk to your GPT using Whisper Speech-to-Text transcription
-9. Search Bing and include the results in the retrieval (RAG)
-10. Have your GPT ask multiple-choice questions and suggest responses
-11. Use Microsoft Graph API to send emails, schedule appointments and find people
-12. Store memories and set reminders
-13. Create charts, diagrams and tabular data using your GPT
-14. Connect to external data sources which allow cross-origin resources (CORS)
-15. Calling functions to switch between models or change modality
+### Advanced Features
+1. Dynamic conversations with custom GPTs; shareable links for both conversations and GPT configurations
+2. Upload or drag-and-drop PDFs or text files for enhanced retrieval-based searching
+3. Upload images and engage with your GPT about their content (local usage only, data is not retained after browser refresh)
+4. Request DALL-E to create images based on conversation history, including uploaded images
+5. Use TTS with a choice of voices for an auditory experience
+6. Switch between multiple GPTs or blend their capabilities
+7. Intuitive GPT builder interface
+8. **[New]** Direct voice inputs to your GPT via a microphone button
+9. **[New]** Enhance context through file saving, leveraging vector search for text-based files
+10. **[New]** Integrate Bing search results into retrieval processes (RAG)
+11. **[New]** Seamlessly transition between models or modalities using tools and GPT combinations (configurable in the Configure tab)
+
+### Upcoming Enhancements
+12. Integration of Whisper Speech-to-Text for conversational inputs
+13. Enabling GPTs to pose multiple-choice questions and suggest answers
+14. Integration with Microsoft Graph API for email management, appointment scheduling, and contact searches
+15. Memory storage and reminder setting functionalities
+16. Tools for creating charts, diagrams, and tabular data
+17. Support for connecting to external data sources compatible with CORS
+
+### About this repository
+- Contributions welcome!
+- MIT License
+- Author: [Greg DeCarlo](https://linktr.ee/mrinreality)
+- README was modified by ChatGPT
