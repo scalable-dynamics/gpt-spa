@@ -1,9 +1,8 @@
 export default function createVectorStore(getEmbeddings) {
     let db = [];
     return {
-        clear() {
-            db = [];
-        },
+        clear: () => db = [],
+        hasVectors: () => db.length > 0,
         vectorSearch: vector_search.bind(null, db, getEmbeddings),
         storeDocument: store_document.bind(null, db, getEmbeddings),
         storeVector: store_vector.bind(null, db),

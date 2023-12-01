@@ -46,7 +46,7 @@
                                         <path d="M12 4l0 12" />
                                     </svg>
                                 </label>
-                                <input id="chat-input" type="text" placeholder="Enter message..." />
+                                <textarea id="chat-input" placeholder="Enter message..."></textarea>
                                 <button id="mic-button" title="Speech input">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                         stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round"
@@ -89,20 +89,15 @@
     <script src="https://unpkg.com/adaptivecards@3.0.2/dist/adaptivecards.min.js"></script>
     <script src="https://unpkg.com/markdown-it@13.0.2/dist/markdown-it.js"></script>
     <script type="module">
-        import { contentCard, confirmationCard, questionCard, configCard, useCardMarkdownRenderer } from './js/cards.js';
+        import { contentCard, configCard, useCardMarkdownRenderer } from './js/cards.js';
         import { onFilesDropped } from './js/files.js';
         import initGPTs from './js/gpts.js';
-        import initOpenAI from './js/openai.js';
+        import { initOpenAI, initAzureOpenAI } from './js/openai.js';
+        import initSearch from './js/search.js';
         import { startSpeech, stopSpeech } from './js/speech.js';
         import createVectorStore from './js/vectors.js';
 
-        const renderMarkdown = (text) => markdownit().render(text)
-        useCardMarkdownRenderer(renderMarkdown)
-
         const outputContainer = document.getElementById('output-container');
-        const OPENAI_API_KEY = await configCard(outputContainer, 'OPENAI_API_KEY')
-        const OPENAI_API_ORG = await configCard(outputContainer, 'OPENAI_API_ORG')
-
         const links = document.getElementById('gpt-links');
         const sidebarToggle = document.getElementById('sidebar-toggle');
         const shareButton = document.getElementById('share-button');
@@ -117,7 +112,15 @@
         const sendButton = document.getElementById('send-button');
         const chatTab = document.getElementById('chat-tab');
         const configTab = document.getElementById('config-tab');
-        const defaultGPT = "ChatGPT"
+        const defaultGPT = "ChatGPT";
+        const renderMarkdown = useCardMarkdownRenderer((text) => markdownit().render(text));
+        const getConfig = configCard.bind(null, outputContainer);
+        const bingSearch = await initSearch(getConfig)
+        const openAI = await initOpenAI(getConfig);//initAzureOpenAI(getConfig);
+        const vectorStore = createVectorStore(openAI.getEmbeddings);
+        let gpt;
+        let creatingGPT = false;
+        let messages = []
         let gpts = initGPTs(document.getElementById('form'),
             {
                 name: defaultGPT,
@@ -147,11 +150,6 @@
                 instructions: "Create an inspirational quote that is unique for today"
             }
         );
-        let gpt;
-        let creatingGPT = false;
-        const openAI = initOpenAI(OPENAI_API_KEY, OPENAI_API_ORG);
-        const vectorStore = createVectorStore(openAI.getEmbeddings);
-        let messages = []
 
         initialize();
 
@@ -167,7 +165,6 @@
                         appendImage(image, true)
                         if (imageDesc) {
                             messages.push({ role: 'assistant', content: imageDesc })
-                            console.log('vision', imageDesc)
                         }
                     } else {
                         vectorStore.storeDocument(name, content);
@@ -194,11 +191,14 @@
                 });
             }
         });
-        chatInput.addEventListener('keyup', (e) => {
-            if (e.key === 'Enter') {
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
                 askAssistant();
             }
         });
+        chatInput.addEventListener('input', autoSizeChatInput);
+        chatInput.addEventListener('change', autoSizeChatInput);
         createButton.addEventListener('click', (e) => {
             gpts.create();
             configTab.checked = true;
@@ -242,14 +242,20 @@
                     return
                 }
                 url.hash = `conversation/${toBase64(JSON.stringify(messages))}`
-                if (url.hash.length > 2000) {
-                    url.hash = `conversation/${toBase64(JSON.stringify(messages.filter(({ role, content }) => role !== 'user' || content.length < 1000)))}`
-                }
             } else {
-                url.hash = `gpt/${toBase64(JSON.stringify(gpt))}`
+                if (creatingGPT || gpt.name === defaultGPT) {
+                    alert('You cannot share this GPT')
+                    return
+                }
+                url.hash = `gpt/${toBase64(JSON.stringify({
+                    ...gpt,
+                    icon: undefined,
+                    files: [],
+                    tools: []
+                }))}`
             }
             if (url.hash.length > 2000) {
-                alert('The URL is too long to share. Please delete some of the files or messages and try again.')
+                alert('The URL is too long to share')
                 return
             }
             navigator.clipboard.writeText(url.href).then(() => {
@@ -305,6 +311,26 @@
             }).join(''));
         }
 
+        function autoSizeChatInput() {
+            const lines = chatInput.value.split('\n');
+            chatInput.style.height = 'auto'
+            if (lines.length > 1) {
+                chatInput.classList.add('multiline');
+                chatInput.style.height = ((lines.length * 25) + 10) + 'px';
+            } else if (chatInput.scrollHeight > chatInput.clientHeight) {
+                chatInput.classList.add('multiline');
+                chatInput.style.height = chatInput.scrollHeight + 'px';
+            } else {
+                chatInput.classList.remove('multiline');
+                chatInput.style.height = '40px';
+            }
+        }
+
+        function setScrollPosition() {
+            document.body.scrollTop = document.body.scrollHeight;
+            document.documentElement.scrollTop = document.documentElement.scrollHeight
+        }
+
         function renderSidebar() {
             gpts.renderList(links, (name) => {
                 sidebarToggle.checked = false
@@ -313,30 +339,32 @@
         }
 
         function saveGPT() {
-            const name = document.getElementById('name').value;
+            const name = gpts.getName()
             if (!creatingGPT && gpt.name === defaultGPT && name !== defaultGPT) {
                 alert('You cannot change the name of this GPT')
                 return
             }
-            if (gpts.save(gpt.name)) {
+            if (gpts.save(creatingGPT ? name : gpt.name)) {
                 renderSidebar();
                 return true
             }
         }
 
-        function loadGPT(name) {
+        async function loadGPT(name) {
+            chatTab.checked = true
             gpt = gpts.load(name)
             messages = []
             vectorStore.clear()
-            if (gpt.files) {
-                for (let file of gpt.files) {
-                    vectorStore.storeDocument(file.name, file.content)
-                }
-            }
             gptName.innerText = gpt.name
             outputContainer.innerHTML = ""
+            if (gpt.files) {
+                const loader = addOutput("", gpt.name + ' - Loading files...')
+                for (let file of gpt.files) {
+                    await vectorStore.storeDocument(file.name, file.content)
+                }
+                loader()
+            }
             addOutput(gpt.welcome, gpt.name)
-            chatTab.checked = true
         }
 
         function addOutput(content, sender) {
@@ -351,25 +379,21 @@
             if (!content) {
                 message.innerHTML = loading
             }
-            document.body.scrollTop = document.body.scrollHeight;
-            document.documentElement.scrollTop = document.documentElement.scrollHeight
+            setScrollPosition();
             return (text, replace) => {
                 if (!content) {
                     message.innerHTML = ""
                 }
                 if (text === undefined) {
-                    outputContainer.removeChild(container);
-                }
-                else if (text instanceof HTMLImageElement) {
-                    message.innerHTML = ""
-                    message.appendChild(text)
+                    if (outputContainer.contains(container)) {
+                        outputContainer.removeChild(container);
+                    }
                 } else if (replace) {
                     message.innerHTML = renderMarkdown((content = text))
                 } else {
                     message.innerHTML = renderMarkdown((content += text))
                 }
-                document.body.scrollTop = document.body.scrollHeight;
-                document.documentElement.scrollTop = document.documentElement.scrollHeight
+                setScrollPosition()
             }
         }
 
@@ -377,51 +401,99 @@
             let input = chatInput.value;
             if (!input) return;
             chatInput.value = '';
+            autoSizeChatInput();
             addOutput(input, 'You');
-            messages.push({ role: 'user', content: input })
+            let removeLoader = addOutput("", gpt.name)
 
-            const results = await vectorStore.vectorSearch(input);
-            if (results.length > 0) {
-                const retrieval = results[0].text;
-                messages.push({ content: `More details: ${retrieval}`, role: 'user' });
-            } else {
-
-                const tools = gpts.list().filter(({ name }) => name !== gpt.name && ((!gpt.tools || gpt.tools.length === 0) || gpt.tools.includes(name)))
-                const intent = await openAI.getIntent(messages, tools.map(({ name, description }) => ({ name, description })));
-                console.log('intent', intent)
-                let processed = false
-                for (let tool of intent) {
-                    const gpt = tools.find(({ name }) => tool.name === name)
-                    if (!gpt) {
-                        console.log('gpt not found!', tool)
-                        continue
-                    }
-                    if (processed) {
-                        tool.input = await openAI.getCompletion([
-                            { role: 'system', content: `Update the content in the last user message based on the conversation. Your response should be a prompt for ${gpt.name}: ${gpt.description}.` },
-                            ...messages,
-                            { role: 'user', content: tool.input }
-                        ]);
-                    }
-                    await addGPTOutput(gpt, tool.input)
-                    processed = true
+            if (vectorStore.hasVectors()) {
+                const results = await vectorStore.vectorSearch(input);
+                if (results.length > 0) {
+                    const retrieval = results[0].text;
+                    messages.push({ role: 'user', content: `More details:\n${retrieval}` });
+                    addOutput(retrieval, results[0].name);
                 }
-
-                if (processed) return;
             }
 
-            addGPTOutput(gpt, input)
+            if (gpt.tools && gpt.tools.length > 0) {
+                const tools = gpts.list().filter(({ name }) => name !== gpt.name && gpt.tools.includes(name))
+                const intents = await getGPTIntent(input, tools);
+                if (intents.trim()) {
+                    let processed = false
+                    const intent = intents.split('\n');
+                    removeLoader();
+                    for (let line of intent) {
+                        const splitIndex = line.indexOf(':')
+                        if (splitIndex === -1) {
+                            if (line.trim()) {
+                                addOutput(line, gpt.name)
+                                break;
+                            }
+                        } else {
+                            const tool = {
+                                name: line.substring(0, splitIndex).trim(),
+                                input: line.substring(splitIndex + 1).trim()
+                            }
+                            if (tool.name.indexOf('*') === 0) {
+                                tool.name = tool.name.substring(1).trim()
+                                tool.parallel = true
+                            }
+                            const gpt = tools.find(({ name }) => tool.name === name)
+                            if (!gpt) {
+                                console.log('gpt not found!', tool)
+                                continue
+                            }
+                            if (processed) {
+                                removeLoader = addOutput("", gpt.name)
+                                tool.input = await updateGPTInput(gpt, tool.input)
+                                removeLoader();
+                                if (!tool.input) {
+                                    continue
+                                }
+                            }
+                            const content = await addGPTOutput(gpt, tool.input)
+                            if (content) {
+                                messages.push({ role: 'user', content: `More details from ${tool.name}:\n${content}` })
+                                processed = true
+                            }
+                        }
+                    }
+                    if (processed) return;
+                }
+            }
+            removeLoader();
+
+            messages.push({ role: 'user', content: input })
+            const output = await addGPTOutput(gpt, input)
+            if (output) {
+                messages.push({ role: 'assistant', content: output })
+            }
+        }
+
+        async function getGPTIntent(input, tools) {
+            return await openAI.getCompletion([
+                {
+                    role: 'system', content: `Let's think step-by-step.
+**Response Guidelines:**
+- Format the response as a list, with each tool and its input on a separate line.
+- For each tool used, combine the tool name and input in the format: "Tool Name: Input".
+## Tools
+${tools.map(({ name, description }) => `${name}: ${description || ''}`).join("\n")}
+## Example
+Tool Name 1: Input 1
+Tool Name 2: Input 2` },
+                { role: 'user', content: input }
+            ], undefined, 50, 3);
         }
 
         async function addGPTOutput(gpt, input) {
             const appendOutput = addOutput("", gpt.name)
             let content
             if (typeof gpt.action === 'function') {
-                content = await gpt.action(input)
-                if (content) {
-                    messages.push({ role: 'assistant', content })
+                content = await gpt.action(input, appendOutput)
+                if (typeof content === 'string') {
                     appendOutput(content, true)
-                } else {
+                    return content
+                } else if (!content) {
                     appendOutput()
                 }
             } else {
@@ -430,40 +502,38 @@
                     ...messages
                 ], appendOutput);
                 if (content) {
-                    messages.push({ role: 'assistant', content })
+                    return content
                 } else {
                     appendOutput()
                 }
             }
         }
 
-        async function generateImage(prompt) {
-            return openAI.getImage(prompt).then((image) => {
+        async function updateGPTInput(gpt, input) {
+            return await openAI.getCompletion([
+                {
+                    role: 'system', content: `Update the content in the last user message based on the conversation.
+Your response should be a prompt for ${gpt.name}: ${gpt.description || gpt.instructions}.`
+                },
+                ...messages,
+                { role: 'user', content: input }
+            ], undefined, 50);
+        }
+
+        async function generateImage(prompt, appendOutput) {
+            openAI.getImage(prompt).then((image) => {
                 if (image) {
-                    return `![${image.alt}](${image.url})`
+                    appendOutput(`![${image.alt}](${image.url})`)
                 }
             })
+            return { pending: true }
         }
 
-        async function generateSpeech(text, voice) {
-            openAI.playSpeech(text, voice)
-            return text
-        }
-
-        async function bingSearch(prompt) {
-            const BING_SEARCH_KEY = await configCard(outputContainer, 'BING_SEARCH_KEY')
-            const response = await fetch(`https://api.bing.microsoft.com/v7.0/search?count=3&responseFilter=Webpages&q=${encodeURIComponent(prompt)}`, {
-                headers: {
-                    'Ocp-Apim-Subscription-Key': BING_SEARCH_KEY,
-                    'Content-Type': 'application/json'
-                },
-                method: 'GET'
+        async function generateSpeech(text, appendOutput) {
+            openAI.playSpeech(text, gpt.voice).then(() => {
+                appendOutput(text, true)
             })
-            const data = await response.json()
-            return data.webPages.value.map(result => `
-### [${result.name}](${result.url})
-> ${result.snippet}
-`).join('\n')
+            return { pending: true }
         }
     </script>
 </body>
