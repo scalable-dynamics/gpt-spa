@@ -1,0 +1,25 @@
+{
+  "name": "gpt-spa",
+  "version": "2.0.0",
+  "description": "Customizable GPTs stored on your local browser, using OpenAI models text-embedding-ada-002, tts-1, whisper-1, dall-e-3, and gpt-4-vision-preview. Enhanced with Azure OpenAI support!",
+  "main": "./local/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/scalable-dynamics/gpt-spa.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/scalable-dynamics/gpt-spa/issues"
+  },
+  "homepage": "https://github.com/scalable-dynamics/gpt-spa#readme",
+  "dependencies": {
+    "web-ai-toolkit": "^0.1.1"
+  },
+  "devDependencies": {
+    "electron": "^31.1.0"
+  }
+}

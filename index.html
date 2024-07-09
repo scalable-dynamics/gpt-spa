@@ -12,6 +12,8 @@
     <div class="container">
         <input type="checkbox" id="sidebar-toggle" name="showSidebar" />
         <label for="sidebar-toggle">☰</label>
+        <input type="checkbox" id="local-toggle" name="runLocally" />
+        <label for="local-toggle">🔒</label>
         <aside>
             <nav>
                 <ul id="gpt-links"></ul>
@@ -94,12 +96,14 @@
         import initGPTs from './js/gpts.js';
         import { initOpenAI, initAzureOpenAI } from './js/openai.js';
         import initSearch from './js/search.js';
-        import { startSpeech, stopSpeech } from './js/speech.js';
+        //import { startSpeech, stopSpeech } from './js/speech.js';
         import createVectorStore from './js/vectors.js';
+        import { startSpeech, stopSpeech, textToSpeech, summarizeText, ocrImage } from './js/wait.js';
 
         const outputContainer = document.getElementById('output-container');
         const links = document.getElementById('gpt-links');
         const sidebarToggle = document.getElementById('sidebar-toggle');
+        const runLocally = document.getElementById('local-toggle');
         const shareButton = document.getElementById('share-button');
         const createButton = document.getElementById('create-button');
         const deleteButton = document.getElementById('delete-button');
@@ -150,6 +154,7 @@
                 instructions: "Create an inspirational quote that is unique for today"
             }
         );
+        let useLocalModels = false;
 
         initialize();
 
