@@ -1,0 +1,20 @@
+{
+  "name": "biz-bot",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Customizable bots (OpenAI GPT, xAI Grok, Anthropic Claude) that swarm together — static SPA + Cloudflare Worker router",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "stamp": "node scripts/stamp.mjs",
+    "predeploy": "npm run stamp && npm test",
+    "deploy": "wrangler deploy --env=\"\"",
+    "test": "node --test worker/test/*.test.mjs public/test/*.test.mjs",
+    "e2e": "node scripts/e2e.mjs",
+    "verify:live": "node scripts/verify-live.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.62.1",
+    "wrangler": "^4.124.0"
+  }
+}

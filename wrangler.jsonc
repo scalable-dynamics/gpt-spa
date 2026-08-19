@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "biz-bot",
+  "main": "worker/src/index.js",
+  "compatibility_date": "2026-08-04",
+  "observability": { "enabled": true },
+  // Workers AI (free tier) provides document embeddings when no provider with an embeddings API is configured.
+  "ai": { "binding": "AI" },
+  // "e2e" is used by `npm run e2e` (scripts/e2e.mjs): same worker without the AI binding, so the mock-only test run
+  // needs no Cloudflare login (Workers AI is a remote binding). Bindings/vars are not inherited by environments.
+  "env": { "e2e": { "vars": { "ALLOWED_ORIGIN": "" } } },
+  // Serve the SPA from ./public and route /api/* to the worker (single deploy: `npm run deploy`).
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "vars": {
+    // Only same-origin requests reach /api/*. To allow another site (e.g. a custom domain preview) list it here, comma-separated.
+    "ALLOWED_ORIGIN": ""
+  }
+  // Secrets (never commit): npx wrangler secret put OPENAI_API_KEY | XAI_API_KEY | ANTHROPIC_API_KEY
+  // Access control: put Cloudflare Access (Zero Trust) in front of this Worker's route/domain — no app-level tokens are used.
+}

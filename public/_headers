@@ -1,0 +1,10 @@
+# Cloudflare static-asset headers (https://developers.cloudflare.com/workers/static-assets/headers/)
+# HTML/JS/CSS always revalidate (ETag → cheap 304) so a redeploy can never leave a mismatched module graph.
+/*
+  Cache-Control: no-cache, must-revalidate
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+/favicon.ico
+  ! Cache-Control
+  Cache-Control: public, max-age=86400
